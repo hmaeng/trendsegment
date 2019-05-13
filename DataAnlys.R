@@ -34,9 +34,9 @@ symbols(x=c(1918), y=c(month[which(month[,1]==1918),5]), circles=3, col=2, add=T
 
 plot(month[,1], month[,5], type="b",
   col="darkgray", pch=19, ylab="", xlab="year", cex.axis=1.5, cex.lab=1.5)
-tguwfit <- ts(x=month[,5], thr=1, bal=0)
-c(month[tguwfit$cpts,1])
-lines(month[,1], tguwfit$fit, col=1, lty=1, lwd=2) # TGUW
+tsfit <- ts(x=month[,5], thr=1, bal=0)
+c(month[tsfit$cpts,1])
+lines(month[,1], tsfit$fit, col=1, lty=1, lwd=2) # ts
 legend("bottomright", c("obs","TrendSegment"), pch=c(19, rep(NA, 1))
   , col=c("darkgray",1), lty=c(1,1), lwd=c(1,2), cex=1, bty="n", ncol=1)
 
@@ -133,7 +133,7 @@ plot(south.eachmonth$year, south.eachmonth$mean.extent,
   ylim=c(range(south.eachmonth$mean.extent)[1]-0.5, range(south.eachmonth$mean.extent)[2]+0.5))
 x <- south.eachmonth$mean.extent
 
-lines(south.eachmonth$year, ts(x, thr=1.3, bal=0)$fit, col=1, lty=1, lwd=3) # TGUW
+lines(south.eachmonth$year, ts(x, thr=1.3, bal=0)$fit, col=1, lty=1, lwd=3) # ts
 lines(south.eachmonth$year, not.sic(x)$fit, col=2, lwd=2, lty=2) # NOT
 lines(south.eachmonth$year, id(x)$fit, col=3, lwd=2, lty=3) # ID
 lines(south.eachmonth$year, tf(x)$fit, col=4, lwd=1, lty=4) # TF
