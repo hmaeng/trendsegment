@@ -111,7 +111,6 @@ plot(north.eachmonth$year, north.eachmonth$mean.extent,
   type="p",
   xlab="year", ylab="ice extent", col="darkgray", pch=19, cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(north.eachmonth$mean.extent)[1]-0.5, range(north.eachmonth$mean.extent)[2]+0.5))
-
 lines(north.eachmonth$year, ts(x, thr=1.3, p=0.04, bal=0)$fit, col=1, lty=1, lwd=2) # TS
 
 ### Figures 1-(a) and 2-(a) in the supplementary materials
@@ -119,10 +118,8 @@ plot(north.eachmonth$year, north.eachmonth$mean.extent,
   type="p",
   xlab="year", ylab="ice extent", col="darkgray", pch=19, cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(north.eachmonth$mean.extent)[1]-0.5, range(north.eachmonth$mean.extent)[2]+0.5))
-
 lines(north.eachmonth$year, not.sic(x)$fit, col=2, lwd=2, lty=1) # NOT
 lines(north.eachmonth$year, id(x)$fit, col=4, lwd=2, lty=2) # ID
-
 legend("topright", c("NOT","ID")
   , col=c(2,4), lty=c(1,2), lwd=rep(2,2), cex=1.5, bty="n", ncol=1)
 
@@ -131,10 +128,8 @@ plot(north.eachmonth$year, north.eachmonth$mean.extent,
   type="p",
   xlab="year", ylab="ice extent", col="darkgray", pch=19, cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(north.eachmonth$mean.extent)[1]-0.5, range(north.eachmonth$mean.extent)[2]+0.5))
-
 lines(north.eachmonth$year, tf(x)$fit, col=3, lwd=2, lty=1) # TF
 lines(north.eachmonth$year, cpop(x)$fit, col=2, lty=2, lwd=2) # CPOP
-
 legend("topright", c("TF","CPOP")
   , col=c(3:2), lty=c(1,2), lwd=rep(2,2), cex=1.5, bty="n", ncol=1)
 
@@ -153,20 +148,15 @@ plot(south.eachmonth$year, south.eachmonth$mean.extent,
   type="b",
   xlab="year", ylab="ice extent", col="darkgray", pch=19,cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(south.eachmonth$mean.extent)[1]-0.5, range(south.eachmonth$mean.extent)[2]+0.5))
-
-tsfit <- trendsegment(x=x, p=0.04, th.const = 1.3, bal=0) # TS
-lines(south.eachmonth$year, tsfit$est, col=1, lty=1, lwd=2) # TS
-south.eachmonth$year[tsfit$cpt]
+lines(south.eachmonth$year, ts(x, thr=1.3, p=0.04, bal=0)$fit, col=1, lty=1, lwd=2) # TS
 
 ### Figures 3-(a) and 4-(a) in the supplementary materials
 plot(south.eachmonth$year, south.eachmonth$mean.extent,
   type="p",
   xlab="year", ylab="ice extent", col="darkgray", pch=19, cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(south.eachmonth$mean.extent)[1]-0.5, range(south.eachmonth$mean.extent)[2]+0.5))
-
 lines(south.eachmonth$year, not.sic(x)$fit, col=2, lwd=2, lty=1) # NOT
 lines(south.eachmonth$year, id(x)$fit, col=4, lwd=2, lty=2) # ID
-
 legend("topleft", c("NOT","ID")
   , col=c(2,4), lty=c(1,2), lwd=rep(2,2), cex=1.5, bty="n", ncol=1)
 
@@ -175,10 +165,8 @@ plot(south.eachmonth$year, south.eachmonth$mean.extent,
   type="p",
   xlab="year", ylab="ice extent", col="darkgray", pch=19, cex.axis=1.5, cex.lab=1.5,
   ylim=c(range(south.eachmonth$mean.extent)[1]-0.5, range(south.eachmonth$mean.extent)[2]+0.5))
-
 lines(south.eachmonth$year, tf(x)$fit, col=3, lwd=2, lty=1) # TF
 lines(south.eachmonth$year, cpop(x)$fit, col=2, lty=2, lwd=2) # CPOP
-
 legend("topleft", c("TF","CPOP")
   , col=c(3:2), lty=c(1,2), lwd=rep(2,2), cex=1.5, bty="n", ncol=1)
 
