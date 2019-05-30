@@ -12,7 +12,6 @@ source("estimateCPOP.R")
 
 
 have.signal <- function(model){
-
   if(model$cpt.type == "pcwsConstMean"){
 
     signal <- rep(0, model$n)
@@ -21,7 +20,6 @@ have.signal <- function(model){
     signal[segments[1,1]:segments[1,2]] <- model$start[1]
 
     for(j in 2:nrow(segments)) signal[segments[j,1]:segments[j,2]] <- signal[segments[j,1]-1] + model$jump.size[j-1]
-
 
   }else if(model$cpt.type == "pcwsLinContMean" & length(model$cpt)>0){
     signal <- rep(0, model$n)
@@ -42,7 +40,7 @@ have.signal <- function(model){
     slope <- model$start[2]
     signal[segments[1,1]:segments[1,2]] <- model$start[1] + segments[1,1]:segments[1,2] * model$start[2]
 
-  } else if(model$cpt.type == "pcwsLinMean"){
+  }else if(model$cpt.type == "pcwsLinMean"){
 
     signal <- rep(0, model$n)
     segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
@@ -58,47 +56,7 @@ have.signal <- function(model){
       if(segments[j,1]+1 < segments[j,2]){
         for(k in (segments[j,1]+1):segments[j,2]) signal[k] <- signal[k-1] + slope
       }
-
     }
-
-  } else if(model$cpt.type == "pcwsQuadMean"){
-
-    signal <- rep(0, model$n)
-    segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
-
-    slope <- model$start[2]
-    quad <- model$start[3]
-
-    signal[segments[1,1]:segments[1,2]] <- model$start[1] + segments[1,1]:segments[1,2] * slope +  (segments[1,1]:segments[1,2])^2 * quad
-
-    for(j in 2:nrow(segments)) {
-
-      slope <- slope +  model$jump.size[j-1,2]
-      quad <- quad +  model$jump.size[j-1,3]
-
-      signal[segments[j,1]] <-  signal[segments[j-1,2]] + model$jump.size[j-1,1]
-      for(k in (segments[j,1]+1):segments[j,2]) signal[k] <- signal[k-1] + slope + (2 *  k +1) * quad
-
-    }
-
-  } else if(model$cpt.type == "pcwsConstMeanVar"){
-
-
-    mu.signal <- sigma.signal <- rep(0, model$n)
-
-    segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
-
-    mu.signal[segments[1,1]:segments[1,2]] <- model$start[1]
-    sigma.signal[segments[1,1]:segments[1,2]] <- model$start[2]
-
-    for(j in 2:nrow(segments)){
-
-      mu.signal[segments[j,1]:segments[j,2]] <- mu.signal[segments[j,1]-1] + model$jump.size[j-1,1]
-      sigma.signal[segments[j,1]:segments[j,2]] <- sigma.signal[segments[j,1]-1] + model$jump.size[j-1,2]
-
-    }
-
-    signal <- cbind(mu.signal, sigma.signal)
   }
 
   return(signal)
@@ -173,12 +131,12 @@ model.linsgmts <-  list(name = "linsgmts", # bump function length=10 / jump size
   n = 256*9,
   start=c(-1,0))
 
-model.blocks <-  list(name = "blocks",
+model.teeth <-  list(name = "teeth",
   cpt.type = "pcwsConstMean",
-  cpt = c(205, 267, 308, 472, 512, 820, 902, 1332, 1557, 1598, 1659),
-  jump.size = diff(c(0, 14.64, -3.66, 7.32, -7.32, 10.98, -4.39, 3.29, 19.03, 7.68, 15.37, 0))/ 10,
-  start = 0,
-  n = 2048)
+  cpt = (1:7) * 100,
+  jump.size = 2*(-1)^{1:7},
+  n = 100 * 8,
+  start = 1)
 
 model.lin <-  list(name = "lin",
   cpt.type = "pcwsLinContMean",
@@ -189,7 +147,7 @@ model.lin <-  list(name = "lin",
 
 models <- list(model.wave1, model.wave2 , model.mix1,
   model.mix2, model.mix3,
-  model.linsgmts, model.blocks, model.lin)
+  model.linsgmts, model.teeth, model.lin)
 
 par(mfrow=c(4,2),mar=rep(3,4))
 
@@ -203,7 +161,7 @@ for(i in 1:length(models)){
 #######################################
 #   Simulations
 #######################################
-simfinal <- function(N, modelnum, sgma, thr, bal, noise){
+sims<- function(N, modelnum, sgma, thr, p, bal, noise){
 
   truex <- have.signal(models[[modelnum]]) # signal only
   n <- length(truex)
@@ -219,16 +177,10 @@ simfinal <- function(N, modelnum, sgma, thr, bal, noise){
 
     if(noise=="norm1"){
       x <- truex + rnorm(n, sd=sgma)
-    } else if(noise=="norm2"){
-      x <- truex + rnorm(n, sd=sqrt(2))
     } else if(noise=="t5"){
       x <- truex + rt(n, df=5) * sqrt(3/5)
-    } else if(noise=="t10"){
-      x <- truex + rt(n, df=10)* sqrt(10/5)
     } else if(noise=="laplace"){
       x <- truex + extraDistr::rlaplace(n, mu = 0, sigma = 1)
-    } else if(noise=="ar105"){
-      x <- truex + arima.sim(n=n, list(ar=c(0.5)), rand.gen = function(n) rnorm(n, sd=sgma))
     } else if(noise=="ar103"){
       x <- truex + arima.sim(n=n, list(ar=c(0.3)), rand.gen = function(n) rnorm(n, sd=sgma))
     }
@@ -242,7 +194,7 @@ simfinal <- function(N, modelnum, sgma, thr, bal, noise){
     #####################################################################
     ################################## TS ###############################
     #####################################################################
-    obj <- ts(x, thr=thr, bal=bal) ## cpts is turned "integer(0)" if nothing is detected
+    obj <- ts(x, thr=thr, p=p, bal=bal) ## cpts is turned "integer(0)" if nothing is detected
     a.obj <- assess(object=obj, modelnum=modelnum, models=models)
     result[[1]][K,1] <- a.obj$qdiff
     result[[2]][K,1] <- a.obj$mse
@@ -313,4 +265,13 @@ simfinal <- function(N, modelnum, sgma, thr, bal, noise){
   return(result)
 
 }
+
+m1n1 <- sims(N=100, modelnum=1, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m2n1 <- sims(N=100, modelnum=2, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m3n1 <- sims(N=100, modelnum=3, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m4n1 <- sims(N=100, modelnum=4, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m5n1 <- sims(N=100, modelnum=5, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m6n1 <- sims(N=100, modelnum=6, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m7n1 <- sims(N=100, modelnum=7, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
+m8n1 <- sims(N=100, modelnum=8, sgma=1, thr=1.3, p=0.04, bal=0, noise="norm1")
 

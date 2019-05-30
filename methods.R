@@ -3,10 +3,10 @@
 #   Methods
 #######################################
 
-ts <- function(x, thr, bal, method, beta, ...){
+ts <- function(x, thr, p, bal, method, beta, ...){
 
   tic <- proc.time()
-  object <- trendsegment(x, th.const = thr, bal = bal)
+  object <- trendsegment(x, th.const = thr, p = p, bal = bal)
   toc <- proc.time()
 
   list(fit = object$est, cpts=object$cpt, elapsed=(toc-tic)[3])
@@ -27,7 +27,7 @@ not.sic <- function(x){
 id <- function(x){ # adjusted cpts after fitting
   # e.g. x <- c(0:9, 5, 10:0)+rnorm(22)/3  gives three consecutive change-points
   tic <- proc.time()
-  #object <- ID(x, contrast ="slope", ht=F) # give a weird cpts in noiseless input
+  #object <- ID(x, contrast ="slope", ht=F) # gives a weird cpts in noiseless input
   object <- ID(x, contrast ="slope", ht=F, lambda=1) # this does not make any difference compared to the upper one in MODEL 5-7 which contain spikes
   if(length(object$cpt)==1 && object$cpt==c(0)){
     cpts <- c()
