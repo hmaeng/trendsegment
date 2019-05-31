@@ -11,139 +11,65 @@ source("CPOP.R")
 source("estimateCPOP.R")
 
 
-have.signal <- function(model){
-  if(model$cpt.type == "pcwsConstMean"){
-
-    signal <- rep(0, model$n)
-
-    segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
-    signal[segments[1,1]:segments[1,2]] <- model$start[1]
-
-    for(j in 2:nrow(segments)) signal[segments[j,1]:segments[j,2]] <- signal[segments[j,1]-1] + model$jump.size[j-1]
-
-  }else if(model$cpt.type == "pcwsLinContMean" & length(model$cpt)>0){
-    signal <- rep(0, model$n)
-    segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
-
-    slope <- model$start[2]
-    signal[segments[1,1]:segments[1,2]] <- model$start[1] + segments[1,1]:segments[1,2] * model$start[2]
-    for(j in 2:nrow(segments)) {
-
-      slope <- slope +  model$jump.size[j-1]
-
-      for(k in segments[j,1]:segments[j,2]) signal[k] <- signal[k-1] + slope
-    }
-
-  }else if(model$cpt.type == "pcwsLinContMean" & length(model$cpt)==0){
-    signal <- rep(0, model$n)
-    segments <- matrix(c(1, model$n), ncol=2)
-    slope <- model$start[2]
-    signal[segments[1,1]:segments[1,2]] <- model$start[1] + segments[1,1]:segments[1,2] * model$start[2]
-
-  }else if(model$cpt.type == "pcwsLinMean"){
-
-    signal <- rep(0, model$n)
-    segments <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
-
-    slope <- model$start[2]
-    signal[segments[1,1]:segments[1,2]] <- model$start[1] + segments[1,1]:segments[1,2] * slope
-
-    for(j in 2:nrow(segments)) {
-
-      slope <- slope +  model$jump.size[j-1,2]
-
-      signal[segments[j,1]] <-  signal[segments[j-1,2]] + model$jump.size[j-1,1]
-      if(segments[j,1]+1 < segments[j,2]){
-        for(k in (segments[j,1]+1):segments[j,2]) signal[k] <- signal[k-1] + slope
-      }
-    }
-  }
-
-  return(signal)
-}
-
-finding.dH <- function(chp, modelnum, models){
-  n <- models[[modelnum]]$n
-  segments.endpoints.est <- sort(unique(c(0, chp, n)))
-  segments.endpoints.true <- sort(unique(c(0, models[[modelnum]]$cpt, n)))
-
-  distm <- abs(matrix(rep(segments.endpoints.est, length(segments.endpoints.true)), nrow=length(segments.endpoints.est))
-    -matrix(rep(segments.endpoints.true, length(segments.endpoints.est)), nrow=length(segments.endpoints.est), byrow=T))
-
-  screening.dist <- max(apply(distm, 2, min)) * 100 / n
-  precision.dist <- max(apply(distm, 1, min)) * 100 / n
-  dH <- mean((abs(screening.dist-precision.dist) + screening.dist + precision.dist)/2)
-
-  return(dH)
-}
-
-assess <- function(object, modelnum, models){
-  qdiff <- length(which(object$cpts>0)) - length(models[[modelnum]]$cpt)
-  mse <- mean((have.signal(models[[modelnum]])-object$fit)^2)
-  dh <- finding.dH(chp=object$cpts, modelnum=modelnum, models=models)
-  return(list(qdiff=qdiff, mse=mse, dh=dh))
-}
-
-
 #######################################
 #   Models
 #######################################
 
 model.wave1 <-  list(name = "wave1",
-  cpt.type = "pcwsLinContMean",
+  sgnl.type = "PWLC",
   cpt = (1:9) * 150,
-  jump.size = (-1)^{1:16} / 25,
+  chg.size = (-1)^{1:16} / 25,
   n = 150* 10,
-  start=c(-1,1/50))
+  initial=c(-1,1/50))
 
 model.wave2 <-  list(name = "wave2",
-  cpt.type = "pcwsLinMean",
+  sgnl.type = "PWL",
   cpt = (1:20) * 60,
-  jump.size = matrix(c(rep(c(1, -1),10), (-1)^{1:20}/8), ncol=2),
+  chg.size = matrix(c(rep(c(1, -1),10), (-1)^{1:20}/8), ncol=2),
   n = 20*60+60,
-  start=c(-1,1/16))
+  initial=c(-1,1/16))
 
 model.mix1 <-  list(name = "mix1",
-  cpt.type = "pcwsLinMean",
+  sgnl.type = "PWL",
   cpt = (1:7) * 256,
-  jump.size = matrix(c(c(0,-1,0,-1,1,1,0), c(1,-1,-1,1,1,-2,2)/64), ncol=2),
+  chg.size = matrix(c(c(0,-1,0,-1,1,1,0), c(1,-1,-1,1,1,-2,2)/64), ncol=2),
   n = 2048,
-  start=c(0,0))
+  initial=c(0,0))
 
 model.mix2 <-  list(name = "mix2",
-  cpt.type = "pcwsLinMean",
+  sgnl.type = "PWL",
   cpt = sort(c((1:7)*256, 257, 1793)),
-  jump.size = matrix(c(c(-7,7,2,-2,1,-1,1,-7,7), c(0,-1,1,1,-2,2.5,-1.5,0,-1.5)/64), ncol=2),
+  chg.size = matrix(c(c(-7,7,2,-2,1,-1,1,-7,7), c(0,-1,1,1,-2,2.5,-1.5,0,-1.5)/64), ncol=2),
   n = 2048,
-  start=c(2,0))
+  initial=c(2,0))
 
 model.mix3 <- list(name = "mix3",
-  cpt.type = "pcwsLinMean",
+  sgnl.type = "PWL",
   cpt = sort(c((1:7)*256, 512+30, 1280+30, 1793)),
-  jump.size = matrix(c(c(-4, 6,-4,-1,1,-5,4,2,-7,7), c(0, 2,-3,2,-2,1,0,1,0,-2)/64), ncol=2),
+  chg.size = matrix(c(c(-4, 6,-4,-1,1,-5,4,2,-7,7), c(0, 2,-3,2,-2,1,0,1,0,-2)/64), ncol=2),
   n = 2048,
-  start=c(2,0))
+  initial=c(2,0))
 
 model.linsgmts <-  list(name = "linsgmts", # bump function length=10 / jump size=2
-  cpt.type = "pcwsLinMean",
+  sgnl.type = "PWL",
   cpt = sort(c((1:4)*2*256, (1:4)*2*256+5)),
-  jump.size = matrix(c(rep(c(6,-6-4/64), 4), rep(c(1,-1)/64,4)), ncol=2),
+  chg.size = matrix(c(rep(c(6,-6-4/64), 4), rep(c(1,-1)/64,4)), ncol=2),
   n = 256*9,
-  start=c(-1,0))
+  initial=c(-1,0))
 
 model.teeth <-  list(name = "teeth",
-  cpt.type = "pcwsConstMean",
+  sgnl.type = "PWC",
   cpt = (1:7) * 100,
-  jump.size = 2*(-1)^{1:7},
+  chg.size = 2*(-1)^{1:7},
   n = 100 * 8,
-  start = 1)
+  initial = 1)
 
 model.lin <-  list(name = "lin",
-  cpt.type = "pcwsLinContMean",
+  sgnl.type = "PWLC",
   cpt = c(),
-  jump.size = c(),
+  chg.size = c(),
   n = 150* 10,
-  start=c(-1, 2/1500))
+  initial=c(-1, 2/1500))
 
 models <- list(model.wave1, model.wave2 , model.mix1,
   model.mix2, model.mix3,
@@ -152,18 +78,108 @@ models <- list(model.wave1, model.wave2 , model.mix1,
 par(mfrow=c(4,2),mar=rep(3,4))
 
 for(i in 1:length(models)){
-  truex <- have.signal(models[[i]])
+  truex <- have.sgnl(models[[i]])
   x <- truex + rnorm(length(truex), sd=1)
   plot(x, type="l", ylab="", xlab="t", ylim=range(c(x, truex)), col=8, main=paste("( M",i,")" ,models[[i]]$name))
   lines(truex, col=1)
 }
+
+
+#######################################
+#   functions
+#######################################
+
+have.sgnl <- function(model){
+  
+  if(model$sgnl.type == "PWC"){
+    
+    sgnl <- rep(0, model$n)
+    sgmts <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
+    sgnl[sgmts[1,1]:sgmts[1,2]] <- model$initial[1]
+    
+    for(j in 2:nrow(sgmts)){
+      sgnl[sgmts[j,1]:sgmts[j,2]] <- sgnl[sgmts[j,1]-1] + model$chg.size[j-1]
+    } 
+    
+  }else if(model$sgnl.type == "PWLC" & length(model$cpt)>0){
+    
+    sgnl <- rep(0, model$n)
+    sgmts <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
+    slope <- model$initial[2]
+    sgnl[sgmts[1,1]:sgmts[1,2]] <- model$initial[1] + sgmts[1,1]:sgmts[1,2] * model$initial[2]
+    
+    for(j in 2:nrow(sgmts)) {
+      
+      slope <- slope +  model$chg.size[j-1]
+      for(k in sgmts[j,1]:sgmts[j,2]){
+        sgnl[k] <- sgnl[k-1] + slope
+      } 
+    }
+    
+  }else if(model$sgnl.type == "PWLC" & length(model$cpt)==0){
+    sgnl <- rep(0, model$n)
+    sgmts <- matrix(c(1, model$n), ncol=2)
+    slope <- model$initial[2]
+    sgnl[sgmts[1,1]:sgmts[1,2]] <- model$initial[1] + sgmts[1,1]:sgmts[1,2] * model$initial[2]
+    
+  }else if(model$sgnl.type == "PWL"){
+    
+    sgnl <- rep(0, model$n)
+    sgmts <- cbind(c(1,model$cpt+1), c(model$cpt,model$n))
+    slope <- model$initial[2]
+    sgnl[sgmts[1,1]:sgmts[1,2]] <- model$initial[1] + sgmts[1,1]:sgmts[1,2] * slope
+    
+    for(j in 2:nrow(sgmts)) {
+      slope <- slope +  model$chg.size[j-1,2]
+      sgnl[sgmts[j,1]] <-  sgnl[sgmts[j-1,2]] + model$chg.size[j-1,1]
+      
+      if(sgmts[j,1]+1 < sgmts[j,2]){
+        for(k in (sgmts[j,1]+1):sgmts[j,2]){
+          sgnl[k] <- sgnl[k-1] + slope
+        } 
+      }
+    }
+  }
+  
+  return(sgnl)
+  
+}
+
+finding.dH <- function(chp, modelnum, models){
+  
+  n <- models[[modelnum]]$n
+  est.pnts <- sort(unique(c(0, chp, n)))
+  true.pnts <- sort(unique(c(0, models[[modelnum]]$cpt, n)))
+  
+  d <- abs(matrix(rep(est.pnts, length(true.pnts)), nrow=length(est.pnts))
+    -matrix(rep(true.pnts, length(est.pnts)), nrow=length(est.pnts), byrow=T))
+  
+  D1 <- max(apply(d, 2, min)) * 100 / n
+  D2 <- max(apply(d, 1, min)) * 100 / n
+  
+  dH <- mean((abs(D1-D2) + D1 + D2)/2)
+  
+  return(dH)
+  
+}
+
+assess <- function(object, modelnum, models){
+  
+  qdiff <- length(which(object$cpts>0)) - length(models[[modelnum]]$cpt)
+  mse <- mean((have.sgnl(models[[modelnum]])-object$fit)^2)
+  dh <- finding.dH(chp=object$cpts, modelnum=modelnum, models=models)
+  
+  return(list(qdiff=qdiff, mse=mse, dh=dh))
+  
+}
+
 
 #######################################
 #   Simulations
 #######################################
 sims<- function(N, modelnum, sgma, thr, p, bal, noise){
 
-  truex <- have.signal(models[[modelnum]]) # signal only
+  truex <- have.sgnl(models[[modelnum]]) # sgnl only
   n <- length(truex)
 
   par(mfrow=c(1,1),mar=c(2,2,1.5,1.5))
