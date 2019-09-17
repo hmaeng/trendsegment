@@ -18,7 +18,7 @@ source("estimateCPOP.R")
 model.wave1 <-  list(name = "wave1",
   sgnl.type = "PWLC",
   cpt = (1:9) * 150,
-  chg.size = (-1)^{1:16} / 25,
+  chg.size = (-1)^{1:9} / 25,
   n = 150* 10,
   initial=c(-1,1/50))
 
